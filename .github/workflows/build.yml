@@ -18,10 +18,21 @@ jobs:
         run: |
           Expand-Archive -Path YouTubeGameBar.zip -DestinationPath src
 
+
       - name: Crear certificado de firma
         shell: pwsh
         run: |
-          $projectDir = "src\YouTubeGameBar\YouTubeGameBar"
+          $project = Get-ChildItem -Path "src" -Filter "YouTubeGameBar.csproj" -Recurse | Select-Object -First 1
+
+          if (-not $project) {
+            Write-Error "No se encontró YouTubeGameBar.csproj dentro de src"
+            Get-ChildItem -Path "src" -Recurse | Select-Object FullName
+            exit 1
+          }
+
+          $projectDir = $project.Directory.FullName
+
+          Write-Host "Proyecto encontrado en: $projectDir"
 
           $cert = New-SelfSignedCertificate -Type Custom -Subject "CN=YouTubeGameBar" `
             -KeyUsage DigitalSignature -FriendlyName "YouTubeGameBar" `
@@ -37,6 +48,7 @@ jobs:
             -Password $pwd
 
           Export-Certificate -Cert $cert -FilePath "YouTubeGameBar.cer"
+
 
       - name: Compilar solución
         shell: pwsh
